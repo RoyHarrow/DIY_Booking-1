@@ -43,18 +43,19 @@ export async function PUT(
       )
     }
 
-    const validStatuses = [
-      'REQUESTED',
-      'ACCEPTED',
-      'IN_PROGRESS',
-      'COMPLETED',
-      'CANCELLED',
-    ]
+    const allowedTransitions: Record<string, string[]> = {
+      REQUESTED: ['ACCEPTED', 'CANCELLED'],
+      ACCEPTED: ['IN_PROGRESS', 'CANCELLED'],
+      IN_PROGRESS: ['COMPLETED'],
+      COMPLETED: [],
+      CANCELLED: [],
+    }
 
-    if (!validStatuses.includes(status)) {
+    const current = booking.status as string
+    if (!allowedTransitions[current]?.includes(status)) {
       return NextResponse.json(
-        { error: 'Invalid status' },
-        { status: 400 }
+        { error: `Cannot transition from ${current} to ${status}` },
+        { status: 422 }
       )
     }
 

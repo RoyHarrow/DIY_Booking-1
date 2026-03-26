@@ -27,6 +27,8 @@ export default function Register() {
       })
 
       if (res.ok) {
+        const data = await res.json()
+        localStorage.setItem('accessToken', data.accessToken)
         router.push('/profile')
       } else {
         const data = await res.json()

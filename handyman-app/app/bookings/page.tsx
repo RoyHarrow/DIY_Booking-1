@@ -54,9 +54,10 @@ export default function Bookings() {
     }
 
     try {
-      const [bookingsRes, profileRes] = await Promise.all([
+      const [bookingsRes, profileRes, serviceTypesRes] = await Promise.all([
         fetch('/api/bookings', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/profile', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/service-types', { headers: { Authorization: `Bearer ${token}` } }),
       ])
 
       if (bookingsRes.ok && profileRes.ok) {
@@ -64,12 +65,10 @@ export default function Bookings() {
         const profileData = await profileRes.json()
         setBookings(bookingsData)
         setAddresses(profileData.addresses)
-        // For now, hardcode service types or fetch if endpoint exists
-        setServiceTypes([
-          { id: '1', name: 'Plumbing', description: 'Plumbing services' },
-          { id: '2', name: 'Electrical', description: 'Electrical services' },
-          { id: '3', name: 'Carpentry', description: 'Carpentry services' },
-        ])
+        if (serviceTypesRes.ok) {
+          const serviceTypesData = await serviceTypesRes.json()
+          setServiceTypes(serviceTypesData)
+        }
       } else {
         setError('Failed to load data')
       }
@@ -132,6 +131,17 @@ export default function Bookings() {
     } catch (err) {
       setError('Something went wrong')
     }
+  }
+
+  function getStatusColor(status: string): string {
+    const map: Record<string, string> = {
+      REQUESTED: 'bg-yellow-100 text-yellow-800',
+      ACCEPTED: 'bg-blue-100 text-blue-800',
+      IN_PROGRESS: 'bg-purple-100 text-purple-800',
+      COMPLETED: 'bg-green-100 text-green-800',
+      CANCELLED: 'bg-red-100 text-red-800',
+    }
+    return map[status] ?? 'bg-gray-100 text-gray-800'
   }
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>

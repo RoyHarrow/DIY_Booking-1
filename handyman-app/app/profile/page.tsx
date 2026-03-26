@@ -36,6 +36,15 @@ export default function Profile() {
     isDefault: false,
   })
   const [showAddressForm, setShowAddressForm] = useState(false)
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
+  const [editAddressForm, setEditAddressForm] = useState({
+    street: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: '',
+    isDefault: false,
+  })
   const router = useRouter()
 
   useEffect(() => {
@@ -121,6 +130,43 @@ export default function Profile() {
         fetchProfile()
       } else {
         setError('Failed to add address')
+      }
+    } catch (err) {
+      setError('Something went wrong')
+    }
+  }
+
+  const handleEditAddress = (address: Address) => {
+    setEditingAddressId(address.id)
+    setEditAddressForm({
+      street: address.street,
+      city: address.city,
+      state: address.state,
+      postalCode: address.postalCode,
+      country: address.country,
+      isDefault: address.isDefault,
+    })
+  }
+
+  const handleUpdateAddress = async (e: React.FormEvent<HTMLFormElement>, id: string) => {
+    e.preventDefault()
+    const token = localStorage.getItem('accessToken')
+
+    try {
+      const res = await fetch(`/api/profile/addresses/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(editAddressForm),
+      })
+
+      if (res.ok) {
+        setEditingAddressId(null)
+        fetchProfile()
+      } else {
+        setError('Failed to update address')
       }
     } catch (err) {
       setError('Something went wrong')
@@ -293,19 +339,51 @@ export default function Profile() {
 
           <div className="space-y-4">
             {profile.addresses.map((address) => (
-              <div key={address.id} className="border rounded-md p-4 flex justify-between items-start">
-                <div>
-                  <p>{address.street}</p>
-                  <p>{address.city}, {address.state} {address.postalCode}</p>
-                  <p>{address.country}</p>
-                  {address.isDefault && <span className="text-sm text-green-600 font-medium">Default</span>}
-                </div>
-                <button
-                  onClick={() => handleDeleteAddress(address.id)}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  Delete
-                </button>
+              <div key={address.id} className="border rounded-md p-4">
+                {editingAddressId === address.id ? (
+                  <form onSubmit={(e) => handleUpdateAddress(e, address.id)} className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <input type="text" placeholder="Street" value={editAddressForm.street}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditAddressForm({ ...editAddressForm, street: e.target.value })}
+                        className="border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required />
+                      <input type="text" placeholder="City" value={editAddressForm.city}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditAddressForm({ ...editAddressForm, city: e.target.value })}
+                        className="border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required />
+                      <input type="text" placeholder="State" value={editAddressForm.state}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditAddressForm({ ...editAddressForm, state: e.target.value })}
+                        className="border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required />
+                      <input type="text" placeholder="Postal Code" value={editAddressForm.postalCode}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditAddressForm({ ...editAddressForm, postalCode: e.target.value })}
+                        className="border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required />
+                      <input type="text" placeholder="Country" value={editAddressForm.country}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditAddressForm({ ...editAddressForm, country: e.target.value })}
+                        className="border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required />
+                      <label className="flex items-center">
+                        <input type="checkbox" checked={editAddressForm.isDefault}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditAddressForm({ ...editAddressForm, isDefault: e.target.checked })}
+                          className="rounded" />
+                        <span className="ml-2">Set as default</span>
+                      </label>
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="submit" className="bg-indigo-600 text-white px-3 py-1 rounded-md text-sm hover:bg-indigo-700">Save</button>
+                      <button type="button" onClick={() => setEditingAddressId(null)} className="text-gray-600 hover:text-gray-800 text-sm">Cancel</button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p>{address.street}</p>
+                      <p>{address.city}, {address.state} {address.postalCode}</p>
+                      <p>{address.country}</p>
+                      {address.isDefault && <span className="text-sm text-green-600 font-medium">Default</span>}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleEditAddress(address)} className="text-indigo-600 hover:text-indigo-800 text-sm">Edit</button>
+                      <button onClick={() => handleDeleteAddress(address.id)} className="text-red-600 hover:text-red-800 text-sm">Delete</button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
